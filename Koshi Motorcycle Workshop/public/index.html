@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koshi Motorcycle Workshop - Billing & Inventory Management</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Koshi Workshop">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="window.toggleMobileSidebar(false)"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar" id="app-sidebar">
+      <!-- Brand Section -->
+      <div class="brand-section">
+        <div class="brand-icon">🏍️</div>
+        <div class="brand-text" style="flex: 1;">
+          <h1 id="brand-workshop-name">Koshi Workshop</h1>
+          <p>Billing & Inventory</p>
+        </div>
+        <!-- Mobile Close Button -->
+        <button class="mobile-sidebar-close" onclick="window.toggleMobileSidebar(false)" aria-label="Close Menu">&times;</button>
+      </div>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links">
+        <li class="nav-item active" data-view="dashboard" onclick="window.navigateTo('dashboard')">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </li>
+
+        <li class="nav-item" data-view="billing" onclick="window.navigateTo('billing')">
+          <span class="nav-icon">🧾</span>
+          <span>New Bill (POS)</span>
+        </li>
+
+        <li class="nav-item" data-view="invoices" onclick="window.navigateTo('invoices')">
+          <span class="nav-icon">📋</span>
+          <span>Bills & Invoices</span>
+        </li>
+
+        <li class="nav-item" data-view="inventory" onclick="window.navigateTo('inventory')">
+          <span class="nav-icon">📦</span>
+          <span>Spare Parts Inventory</span>
+          <span id="sidebar-low-stock-badge" class="nav-badge" style="display: none;">0</span>
+        </li>
+
+        <li class="nav-item" data-view="customers" onclick="window.navigateTo('customers')">
+          <span class="nav-icon">🏍️</span>
+          <span>Vehicles & Customers</span>
+        </li>
+
+        <li class="nav-item" data-view="ledger" onclick="window.navigateTo('ledger')">
+          <span class="nav-icon">📜</span>
+          <span>Stock Movement Ledger</span>
+        </li>
+
+        <li class="nav-item" data-view="reports" onclick="window.navigateTo('reports')">
+          <span class="nav-icon">📈</span>
+          <span>Reports & Analytics</span>
+        </li>
+
+        <li class="nav-item" data-view="settings" onclick="window.navigateTo('settings')">
+          <span class="nav-icon">⚙️</span>
+          <span>Workshop Settings</span>
+        </li>
+      </ul>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div id="sidebar-user-info" style="display: none; padding-bottom: 0.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <div style="color: #fff; font-weight: 600;" id="sidebar-user-name">Admin</div>
+          <div style="font-size: 0.72rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+            <span id="sidebar-user-role">Administrator</span>
+            <a href="javascript:void(0)" onclick="window.logoutUser()" style="color: #f87171; text-decoration: none; font-weight: 600;">Logout 🚪</a>
+          </div>
+        </div>
+        <div>
+          <span class="status-dot"></span>
+          <span style="color: #e2e8f0; font-weight: 600;">System Online</span>
+        </div>
+        <div>SQLite Database Active</div>
+        <div style="opacity: 0.7; margin-top: 4px;">Koshi Province, Nepal</div>
+      </div>
+    </aside>
+
+    <!-- MAIN APPLICATION AREA -->
+    <div class="main-wrapper">
+      
+      <!-- Top Header Bar -->
+      <header class="top-header">
+        <div class="header-left">
+          <!-- Mobile Hamburger Toggle -->
+          <button id="mobile-hamburger-btn" class="mobile-hamburger-btn" onclick="window.toggleMobileSidebar(true)" aria-label="Open Navigation Menu">
+            ☰
+          </button>
+          <h2 id="top-page-title" class="page-title">Dashboard</h2>
+        </div>
+
+        <div class="header-right">
+          <!-- Real-time Clock -->
+          <div style="background-color: #f1f5f9; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.84rem; font-family: var(--font-mono); font-weight: 600; color: #334155; display: flex; align-items: center; gap: 0.4rem;">
+            <span>🕒</span>
+            <span id="live-clock">--:--:--</span>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <button class="quick-action-btn btn-primary" onclick="window.navigateTo('billing')">
+            <span>🧾</span> + New Bill
+          </button>
+          <button class="quick-action-btn btn-secondary" onclick="window.openAddPartModal()">
+            <span>📦</span> + Add Part
+          </button>
+
+          <!-- User Profile & Logout -->
+          <div id="header-user-profile" class="user-profile-badge" style="display: none;">
+            <span>👤</span>
+            <span id="header-user-name" style="font-weight: 600; color: #1e293b;">Admin</span>
+            <button class="btn-secondary btn-sm" style="margin-left: 0.35rem; padding: 0.2rem 0.5rem; font-size: 0.78rem;" onclick="window.logoutUser()" title="Logout">
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Content Container -->
+      <main id="app-view-container" class="content-area">
+        <!-- Rendered view components insert here -->
+      </main>
+
+      <!-- Mobile Bottom App Navigation Bar -->
+      <nav class="mobile-bottom-nav">
+        <button class="mobile-nav-btn active" data-nav="dashboard" onclick="window.navigateTo('dashboard')">
+          <span class="mobile-nav-icon">📊</span>
+          <span class="mobile-nav-label">Home</span>
+        </button>
+        <button class="mobile-nav-btn" data-nav="billing" onclick="window.navigateTo('billing')">
+          <span class="mobile-nav-icon">🧾</span>
+          <span class="mobile-nav-label">New Bill</span>
+        </button>
+        <button class="mobile-nav-btn" data-nav="inventory" onclick="window.navigateTo('inventory')">
+          <span class="mobile-nav-icon">📦</span>
+          <span class="mobile-nav-label">Stock</span>
+        </button>
+        <button class="mobile-nav-btn" data-nav="invoices" onclick="window.navigateTo('invoices')">
+          <span class="mobile-nav-icon">📋</span>
+          <span class="mobile-nav-label">Bills</span>
+        </button>
+        <button class="mobile-nav-btn" onclick="window.toggleMobileSidebar(true)">
+          <span class="mobile-nav-icon">☰</span>
+          <span class="mobile-nav-label">More</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       LOGIN SCREEN OVERLAY
+       ========================================================================= -->
+  <div id="login-overlay" class="login-overlay" style="display: flex;">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-brand-icon">🏍️</div>
+        <h1>Koshi Motorcycle Workshop</h1>
+        <p>Two-Wheeler Servicing & Inventory System</p>
+      </div>
+
+      <div id="login-error-box" class="login-error">
+        <span>⚠️</span>
+        <span id="login-error-msg">Invalid username or password</span>
+      </div>
+
+      <form id="login-form" onsubmit="window.handleLogin(event)">
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label required">Username</label>
+          <input type="text" id="login-username" class="form-control" placeholder="Enter username (e.g. admin)" required autocomplete="username" autofocus>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label class="form-label required" style="margin-bottom: 0;">Password</label>
+            <a href="javascript:void(0)" onclick="window.toggleLoginPassword()" style="font-size: 0.78rem; color: var(--primary); text-decoration: none;" id="toggle-pwd-btn">Show</a>
+          </div>
+          <input type="password" id="login-password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; font-size: 0.85rem;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-muted);">
+            <input type="checkbox" id="login-remember" checked>
+            <span>Keep me logged in</span>
+          </label>
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="quick-action-btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 1rem; border-radius: var(--radius-md);">
+          Sign In to Workshop ➔
+        </button>
+      </form>
+
+      <!-- Default Credentials Quick Fill Hint -->
+      <div class="login-demo-hint">
+        <div>
+          <strong>Default Login:</strong><br>
+          <span style="font-family: var(--font-mono); font-size: 0.78rem;">admin / admin123</span>
+        </div>
+        <button type="button" class="login-demo-btn" onclick="window.fillDemoLogin()">
+          Quick Fill
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       GLOBAL MODALS
+       ========================================================================= -->
+
+  <!-- 1. Print / View Invoice Modal -->
+  <div id="print-invoice-modal" class="modal-overlay">
+    <div class="modal-card modal-xl">
+      <div class="modal-header no-print">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <h2>🧾 Invoice / Receipt Viewer</h2>
+          <div class="pill-group" style="padding: 2px;">
+            <button class="pill-btn active" id="print-fmt-a4" onclick="document.querySelectorAll('#print-invoice-modal .pill-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); window.renderInvoicePaper('a4');">
+              📄 Standard A4 Bill
+            </button>
+            <button class="pill-btn" id="print-fmt-thermal" onclick="document.querySelectorAll('#print-invoice-modal .pill-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); window.renderInvoicePaper('thermal');">
+              🖨️ 80mm POS Thermal
+            </button>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.closeModal('print-invoice-modal')">&times;</button>
+      </div>
+
+      <div class="modal-body" style="background-color: #e2e8f0; padding: 2rem 1rem;">
+        <div id="print-modal-content">
+          <!-- Rendered paper receipt -->
+        </div>
+      </div>
+
+      <div class="modal-footer no-print">
+        <button class="quick-action-btn btn-secondary" onclick="window.closeModal('print-invoice-modal')">
+          Close
+        </button>
+        <button class="quick-action-btn btn-primary" onclick="window.printInvoice()">
+          🖨️ Print Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Add New Spare Part Modal -->
+  <div id="add-part-modal" class="modal-overlay">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h2>📦 Add New Spare Part to Inventory</h2>
+        <button class="modal-close-btn" onclick="window.closeModal('add-part-modal')">&times;</button>
+      </div>
+      <form id="add-part-form" onsubmit="window.submitAddPart(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">SKU / Part Number</label>
+              <input type="text" id="add-part-sku" class="form-control" style="font-family: var(--font-mono); text-transform: uppercase;" required>
+            </div>
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label required">Part Name / Description</label>
+              <input type="text" id="add-part-name" class="form-control" placeholder="e.g. Castrol Activ 20W-40 4T (1L)" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Category</label>
+              <select id="add-part-category" class="form-control" required>
+                <option value="Engine Oil & Lubricants">Engine Oil & Lubricants</option>
+                <option value="Braking System">Braking System</option>
+                <option value="Engine & Transmission">Engine & Transmission</option>
+                <option value="Filters & Consumables">Filters & Consumables</option>
+                <option value="Cables & Controls">Cables & Controls</option>
+                <option value="Electrical & Lighting">Electrical & Lighting</option>
+                <option value="Suspension & Steering">Suspension & Steering</option>
+                <option value="Tires & Tubes">Tires & Tubes</option>
+                <option value="General Spares">General Spares</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Brand / Manufacturer</label>
+              <input type="text" id="add-part-brand" class="form-control" placeholder="e.g. Castrol, Bajaj, Honda, Bosch">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unit of Measure</label>
+              <input type="text" id="add-part-unit" class="form-control" value="pcs" placeholder="pcs, bottle, set, pair">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Compatible Motorcycle Models</label>
+            <input type="text" id="add-part-compat" class="form-control" placeholder="e.g. Pulsar 150/180/220, Honda Shine, Universal 4T">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Purchase Cost Price (Rs.)</label>
+              <input type="number" id="add-part-cost" class="form-control" step="0.01" min="0" placeholder="500" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Retail Selling Price (Rs.)</label>
+              <input type="number" id="add-part-sell" class="form-control" step="0.01" min="0" placeholder="650" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Initial In-Stock Quantity</label>
+              <input type="number" id="add-part-stock" class="form-control" min="0" value="10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Minimum Alert Level</label>
+              <input type="number" id="add-part-alert" class="form-control" min="1" value="5" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Storage Rack / Shelf</label>
+              <input type="text" id="add-part-rack" class="form-control" placeholder="e.g. Rack A-2, Shelf 3">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="quick-action-btn btn-secondary" onclick="window.closeModal('add-part-modal')">Cancel</button>
+          <button type="submit" class="quick-action-btn btn-primary">+ Add Part to Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Quick Restock / Stock-In Modal -->
+  <div id="restock-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>📥 Quick Restock / Add Stock</h2>
+        <button class="modal-close-btn" onclick="window.closeModal('restock-modal')">&times;</button>
+      </div>
+      <form id="restock-form" onsubmit="window.submitRestock(event)">
+        <input type="hidden" id="restock-part-id">
+        <div class="modal-body">
+          <div style="background-color: #f8fafc; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; border: 1px solid var(--border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Part Being Restocked</div>
+            <div id="restock-part-name" style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-top: 2px;"></div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">
+              Current Available Stock: <strong id="restock-current-stock" style="color: var(--primary);"></strong>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Quantity Received</label>
+              <input type="number" id="restock-qty" class="form-control" min="1" placeholder="e.g. 10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Purchase Cost per Unit (Rs.)</label>
+              <input type="number" id="restock-cost" class="form-control" step="0.01" min="0">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Supplier / Distributor Name</label>
+              <input type="text" id="restock-supplier" class="form-control" placeholder="e.g. Biratnagar Auto Distributors">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Purchase Bill / PO Reference #</label>
+              <input type="text" id="restock-ref" class="form-control" placeholder="e.g. INV-98721">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="quick-action-btn btn-secondary" onclick="window.closeModal('restock-modal')">Cancel</button>
+          <button type="submit" class="quick-action-btn btn-primary">Save Restock Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Stock Adjustment Modal -->
+  <div id="adjust-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>⚖️ Stock Physical Audit / Adjustment</h2>
+        <button class="modal-close-btn" onclick="window.closeModal('adjust-modal')">&times;</button>
+      </div>
+      <form id="adjust-form" onsubmit="window.submitAdjustment(event)">
+        <input type="hidden" id="adjust-part-id">
+        <div class="modal-body">
+          <div style="background-color: #f8fafc; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; border: 1px solid var(--border);">
+            <div id="adjust-part-name" style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);"></div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">
+              System Recorded Stock: <strong id="adjust-current-stock" style="color: var(--primary);"></strong>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Adjustment Type</label>
+              <select id="adjust-type" class="form-control" required>
+                <option value="SET">Set Actual Physical Count</option>
+                <option value="ADD">Add Found Stock (+)</option>
+                <option value="DEDUCT">Deduct Damaged / Lost (-)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Quantity</label>
+              <input type="number" id="adjust-qty" class="form-control" min="0" required placeholder="Quantity">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Reason for Adjustment</label>
+            <input type="text" id="adjust-reason" class="form-control" placeholder="e.g. Monthly physical audit discrepancy, Broken seal" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="quick-action-btn btn-secondary" onclick="window.closeModal('adjust-modal')">Cancel</button>
+          <button type="submit" class="quick-action-btn btn-primary">Apply Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Edit Part Modal -->
+  <div id="edit-part-modal" class="modal-overlay">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h2>✏️ Edit Spare Part Details</h2>
+        <button class="modal-close-btn" onclick="window.closeModal('edit-part-modal')">&times;</button>
+      </div>
+      <form id="edit-part-form" onsubmit="window.submitEditPart(event)">
+        <input type="hidden" id="edit-part-id">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Part Number / SKU</label>
+              <input type="text" id="edit-part-sku" class="form-control" required>
+            </div>
+            <div class="form-group" style="flex: 2;">
+              <label class="form-label required">Part Name</label>
+              <input type="text" id="edit-part-name" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Category</label>
+              <input type="text" id="edit-part-category" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Brand</label>
+              <input type="text" id="edit-part-brand" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Compatible Models</label>
+            <input type="text" id="edit-part-compat" class="form-control">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Cost Price (Rs.)</label>
+              <input type="number" id="edit-part-cost" class="form-control" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Selling Price (Rs.)</label>
+              <input type="number" id="edit-part-sell" class="form-control" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Min Stock Alert</label>
+              <input type="number" id="edit-part-alert" class="form-control" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Rack Location</label>
+              <input type="text" id="edit-part-rack" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="quick-action-btn btn-secondary" onclick="window.closeModal('edit-part-modal')">Cancel</button>
+          <button type="submit" class="quick-action-btn btn-primary">Update Part Details</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Settle Credit / Partial Payment Modal -->
+  <div id="settle-payment-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>💰 Collect Due / Credit Settlement</h2>
+        <button class="modal-close-btn" onclick="window.closeModal('settle-payment-modal')">&times;</button>
+      </div>
+      <form id="settle-payment-form" onsubmit="window.submitSettlePayment(event)">
+        <input type="hidden" id="settle-inv-id">
+        <div class="modal-body">
+          <div style="background-color: #f8fafc; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Invoice #</div>
+                <div id="settle-inv-num" style="font-size: 1.15rem; font-weight: 700; font-family: var(--font-mono); color: var(--primary);"></div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Outstanding Due</div>
+                <div id="settle-due-display" style="font-size: 1.3rem; font-weight: 800; color: var(--danger);"></div>
+              </div>
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+              Customer: <strong id="settle-cust-name"></strong>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Payment Amount Received</label>
+            <input type="number" id="settle-amount" class="form-control" step="0.01" min="1" required style="font-size: 1.15rem; font-weight: 700;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Payment Method</label>
+            <select id="settle-method" class="form-control" required>
+              <option value="CASH">💵 Cash</option>
+              <option value="FONEPAY_QR">📱 Fonepay / QR Code</option>
+              <option value="ESEWA">🟢 eSewa Mobile Wallet</option>
+              <option value="BANK_TRANSFER">🏦 Bank Deposit / Transfer</option>
+              <option value="CARD">💳 POS Card Swipe</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Payment Note / Reference</label>
+            <input type="text" id="settle-notes" class="form-control" placeholder="e.g. Paid in full via Cash / Fonepay Txn ID">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="quick-action-btn btn-secondary" onclick="window.closeModal('settle-payment-modal')">Cancel</button>
+          <button type="submit" class="quick-action-btn btn-primary">Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/billing.js"></script>
+  <script src="js/views/inventory.js"></script>
+  <script src="js/views/invoices.js"></script>
+  <script src="js/views/customers.js"></script>
+  <script src="js/views/reports.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,21 @@
+{
+  "name": "koshi-motorcycle-workshop",
+  "version": "1.0.0",
+  "description": "Comprehensive Billing & Stock Inventory Management Software for Koshi Motorcycle Workshop",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
+  },
+  "keywords": [
+    "workshop",
+    "motorcycle",
+    "inventory",
+    "billing",
+    "invoicing",
+    "koshi",
+    "nepal"
+  ],
+  "author": "Koshi Motorcycle Workshop",
+  "license": "ISC"
+}
